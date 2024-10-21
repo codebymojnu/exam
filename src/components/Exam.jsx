@@ -4,57 +4,40 @@ import Question from './Question';
 import Modal from './Modal';
 
 function Exam() {
-  const [questions, setQuestions] = useState([{ "_id": "65055ad1d27e20e0aad35c55", "subject": "Physics 1st Paper", "chapter": "Chater 1", "topic": "", "question": "রবি ঠাকুর কত সালে নোবেল পান?", "options": ["১৯৪৫", "১৯১৩", "২০১৩", "431"], "correctAnswer": "option2", "__v": 0 }, {
-    "_id": "65055ad1d27e20e0aad35c56",
-    "subject": "Physics 1st Paper",
-    "chapter": "Chapter 2",
-    "topic": "",
-    "question": "মৌলিক কণিকা কোনটি?",
-    "options": ["ইলেকট্রন", "প্রোটন", "নিউট্রন", "সবগুলি"],
-    "correctAnswer": "option4",
-    "__v": 0
-  }, {
-    "_id": "6505620fd04b003b9da57639",
-    "subject": "Physics 1st Paper",
-    "chapter": "Chapter 4",
-    "topic": "",
-    "question": "পদার্থের তিনটি অবস্থা কি কি?",
-    "options": ["জল, বরফ, বাষ্প", "গ্যাস, তরল, কঠিন", "দূষিত, বিশুদ্ধ, গ্যাস", "সাধারণ, বিশেষ, সমান"],
-    "correctAnswer": "option2",
-    "__v": 0
-  }]);
+  const initialTime = 10; // Set the initial time for the exam (in seconds)
+  const [questions, setQuestions] = useState([]);
+
   const [loading, setLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 10 minutes
+  const [timeLeft, setTimeLeft] = useState(initialTime); // Use initial time
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState(''); // For modal input
   const [score, setScore] = useState(0); // Store score here
   const [selectedAnswers, setSelectedAnswers] = useState({}); // To store selected answers
-
+  const [examCompleted, setExamCompleted] = useState(false); // Track if exam is completed
   const navigate = useNavigate();
 
-  // useEffect(() => {
-  //   // Fetch questions from API
-  //   fetch('http://localhost:3000/api/questions/')
-  //     .then((response) => response.json())
-  //     .then((data) => {
-  //       setQuestions(data);
-  //       setLoading(false);
-  //     })
-  //     .catch((error) => {
-  //       console.error('Error loading questions:', error);
-  //       setLoading(false);
-  //     });
-  // }, []);
-
+  useEffect(() => {
+    // Fetch questions from API
+    fetch('https://online-exam-server-teal.vercel.app/api/questions/')
+      .then((response) => response.json())
+      .then((data) => {
+        setQuestions(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error loading questions:', error);
+        setLoading(false);
+      });
+  }, []);
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => {
-        setTimeLeft(timeLeft - 1);
+        setTimeLeft(prevTime => prevTime - 1);
       }, 1000);
 
       return () => clearInterval(timer);
     } else {
-      setShowModal(true);
+      handleTimeOver(); // Handle time over
     }
   }, [timeLeft]);
 
@@ -68,6 +51,7 @@ function Exam() {
   const handleSubmit = () => {
     const calculatedScore = calculateScore();
     setScore(calculatedScore);
+    setExamCompleted(true);
     setShowModal(true);
   };
 
@@ -89,11 +73,11 @@ function Exam() {
     const scoreData = {
       name,
       score,
-      time: 600 - timeLeft,
+      time: initialTime - timeLeft, // Calculate the actual time taken
     };
 
     // Save score to API
-    fetch('http://localhost:3000/api/scores', {
+    fetch('https://online-exam-server-teal.vercel.app/api/scores', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,6 +86,33 @@ function Exam() {
     })
       .then(() => {
         navigate('/scores');
+      })
+      .catch((error) => {
+        console.error('Error saving score:', error);
+      });
+  };
+
+  const handleTimeOver = () => {
+    const calculatedScore = calculateScore(); // Calculate the score based on selected answers
+    setScore(calculatedScore); // Set the calculated score
+
+    const scoreData = {
+      name: "Time_Over", // Default name when time is up
+      score: calculatedScore, // Use the calculated score
+      time: initialTime - timeLeft, // Calculate the actual time taken
+    };
+
+    // Save score to API
+    fetch('https://online-exam-server-teal.vercel.app/api/scores', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(scoreData),
+    })
+      .then(() => {
+        setShowModal(true); // Show the modal to display the score
+        navigate('./scores');
       })
       .catch((error) => {
         console.error('Error saving score:', error);
@@ -117,7 +128,7 @@ function Exam() {
         <div className="font-bold">Time Left: {Math.floor(timeLeft / 60)}:{timeLeft % 60}</div>
       </div>
       <div className="bg-white rounded-lg shadow-md p-4">
-        {questions.map((question) => (
+        {!examCompleted && questions.map((question) => (
           <Question
             key={question._id}
             question={question}
@@ -125,14 +136,16 @@ function Exam() {
             selectedAnswer={selectedAnswers[question._id]} // Pass selected answer to the Question component
           />
         ))}
-        <div className="flex justify-center mt-4">
-          <button
-            onClick={handleSubmit}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-200"
-          >
-            Submit
-          </button>
-        </div>
+        {!examCompleted && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={handleSubmit}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-200"
+            >
+              Submit
+            </button>
+          </div>
+        )}
       </div>
       {showModal && (
         <Modal
