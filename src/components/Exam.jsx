@@ -4,7 +4,7 @@ import Modal from "./Modal";
 import Question from "./Question";
 
 function Exam() {
-  const initialTime = 1200; // Set the initial time for the exam (in seconds)
+  const initialTime = 1300; // Set the initial time for the exam (in seconds)
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true); // Start with loading = true
   const [timeLeft, setTimeLeft] = useState(initialTime); // Use initial time
