@@ -6,8 +6,7 @@ import Question from "./Question";
 function Exam() {
   const initialTime = 1000; // Set the initial time for the exam (in seconds)
   const [questions, setQuestions] = useState([]);
-
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading = true
   const [timeLeft, setTimeLeft] = useState(initialTime); // Use initial time
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState(""); // For modal input
@@ -22,24 +21,26 @@ function Exam() {
       .then((response) => response.json())
       .then((data) => {
         setQuestions(data);
-        setLoading(false);
+        setLoading(false); // Data is loaded, stop loading
       })
       .catch((error) => {
         console.error("Error loading questions:", error);
         setLoading(false);
       });
   }, []);
+
   useEffect(() => {
-    if (timeLeft > 0) {
+    if (timeLeft > 0 && !loading) {
+      // Timer starts only after loading is false
       const timer = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
 
       return () => clearInterval(timer);
-    } else {
+    } else if (timeLeft === 0) {
       handleTimeOver(); // Handle time over
     }
-  }, [timeLeft]);
+  }, [timeLeft, loading]); // Depend on loading state
 
   const handleAnswerChange = (questionId, selectedOption) => {
     setSelectedAnswers((prev) => ({
@@ -119,7 +120,12 @@ function Exam() {
       });
   };
 
-  if (loading) return <div className="loader">Loading...</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-blue-500"></div>
+      </div>
+    );
 
   return (
     <div className="p-6">
