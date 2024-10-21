@@ -1,7 +1,7 @@
-import React from 'react';
+import React from "react";
 
 function Question({ question, onAnswerChange, selectedAnswer }) {
-  const { question: text, options, _id } = question;
+  const { question: text, options, _id, correctAnswer } = question;
 
   return (
     <div className="mb-6 p-6 bg-gray-50 border border-gray-200 rounded-lg shadow-sm">
@@ -18,9 +18,12 @@ function Question({ question, onAnswerChange, selectedAnswer }) {
               onChange={() => onAnswerChange(_id, `option${index + 1}`)} // Call the handler
               className="mr-2 accent-indigo-600"
             />
-            <label htmlFor={`option-${index}-${_id}`} className="text-gray-800">{option}</label>
+            <label htmlFor={`option-${index}-${_id}`} className="text-gray-800">
+              {option}
+            </label>
           </div>
         ))}
+        <p className="text-red-500">Correct Answer: {correctAnswer}</p>
       </div>
     </div>
   );
