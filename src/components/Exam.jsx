@@ -4,16 +4,16 @@ import Modal from "./Modal";
 import Question from "./Question";
 
 function Exam() {
-  const initialTime = 1300; // Set the initial time for the exam (in seconds)
+  const initialTime = 1000; // Set the initial time for the exam (in seconds)
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true); // Start with loading = true
+
+  const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(initialTime); // Use initial time
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState(""); // For modal input
   const [score, setScore] = useState(0); // Store score here
   const [selectedAnswers, setSelectedAnswers] = useState({}); // To store selected answers
   const [examCompleted, setExamCompleted] = useState(false); // Track if exam is completed
-  const [examStarted, setExamStarted] = useState(false); // Track if exam has started
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,48 +22,24 @@ function Exam() {
       .then((response) => response.json())
       .then((data) => {
         setQuestions(data);
-        setLoading(false); // Data is loaded, stop loading
+        setLoading(false);
       })
       .catch((error) => {
         console.error("Error loading questions:", error);
         setLoading(false);
       });
   }, []);
-
-  // Check the current time and update the state accordingly
   useEffect(() => {
-    const checkTime = () => {
-      const now = new Date();
-      const targetTime = new Date();
-      targetTime.setHours(21, 45, 0); // Set to 9:45 PM
-
-      if (now >= targetTime) {
-        setExamStarted(true); // Start the exam
-        setTimeLeft(initialTime); // Reset time for exam
-      } else {
-        const countdownTime = targetTime - now; // Calculate remaining time
-        setTimeLeft(Math.max(0, Math.floor(countdownTime / 1000))); // Convert to seconds
-      }
-    };
-
-    checkTime(); // Initial check
-    const timer = setInterval(checkTime, 1000); // Check every second
-
-    return () => clearInterval(timer); // Cleanup on component unmount
-  }, [initialTime]);
-
-  useEffect(() => {
-    if (timeLeft > 0 && examStarted) {
-      // Timer starts only after exam has started
+    if (timeLeft > 0) {
       const timer = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
 
       return () => clearInterval(timer);
-    } else if (timeLeft === 0 && examStarted) {
+    } else {
       handleTimeOver(); // Handle time over
     }
-  }, [timeLeft, examStarted]);
+  }, [timeLeft]);
 
   const handleAnswerChange = (questionId, selectedOption) => {
     setSelectedAnswers((prev) => ({
@@ -136,41 +112,25 @@ function Exam() {
     })
       .then(() => {
         setShowModal(true); // Show the modal to display the score
-        navigate("/scores");
+        navigate("./scores");
       })
       .catch((error) => {
         console.error("Error saving score:", error);
       });
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-blue-500"></div>
-      </div>
-    );
+  if (loading) return <div className="loader">Loading...</div>;
 
   return (
     <div className="p-6">
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-bold">Physics Exam</h1>
         <div className="font-bold">
-          {examStarted ? (
-            <>
-              Time Left: {Math.floor(timeLeft / 60)}:
-              {String(timeLeft % 60).padStart(2, "0")}
-            </>
-          ) : (
-            <>
-              Time Remaining: {Math.floor(timeLeft / 60)}:
-              {String(timeLeft % 60).padStart(2, "0")}
-            </>
-          )}
+          Time Left: {Math.floor(timeLeft / 60)}:{timeLeft % 60}
         </div>
       </div>
       <div className="bg-white rounded-lg shadow-md p-4">
-        {examStarted &&
-          !examCompleted &&
+        {!examCompleted &&
           questions.map((question) => (
             <Question
               key={question._id}
@@ -179,7 +139,7 @@ function Exam() {
               selectedAnswer={selectedAnswers[question._id]} // Pass selected answer to the Question component
             />
           ))}
-        {examStarted && !examCompleted && (
+        {!examCompleted && (
           <div className="flex justify-center mt-4">
             <button
               onClick={handleSubmit}
@@ -187,13 +147,6 @@ function Exam() {
             >
               Submit
             </button>
-          </div>
-        )}
-        {!examStarted && (
-          <div className="flex justify-center items-center h-48">
-            <h2 className="text-xl font-bold">
-              The exam will start at 9:45 PM.
-            </h2>
           </div>
         )}
       </div>
